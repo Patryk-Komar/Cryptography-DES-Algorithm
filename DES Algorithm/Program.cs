@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace DES_Algorithm {
@@ -12,10 +13,13 @@ namespace DES_Algorithm {
 
             DES des = new DES();
             des.ReadInput();
-            des.InitialPermutation();
+            //des.InitialPermutation();
             des.PermutedChoice();
             des.TransformKeysBlocks();
-            des.Wypisz();
+            //des.TransformKeysBlocks();
+            //des.Wypisz();
+
+            Console.ReadKey();
 
         }
 
