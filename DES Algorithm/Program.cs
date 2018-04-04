@@ -10,6 +10,13 @@ namespace DES_Algorithm {
 
         static void Main (string[] args) {
 
+            DES des = new DES();
+            des.ReadInput();
+            des.InitialPermutation();
+            des.PermutedChoice();
+            des.TransformKeysBlocks();
+            des.Wypisz();
+
         }
 
     }

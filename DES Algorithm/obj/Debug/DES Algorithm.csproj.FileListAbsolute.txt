@@ -1,0 +1,8 @@
+P:\Programowanie\Visual Studio\DES Algorithm\DES Algorithm\bin\Debug\input.txt
+P:\Programowanie\Visual Studio\DES Algorithm\DES Algorithm\bin\Debug\DES Algorithm.exe.config
+P:\Programowanie\Visual Studio\DES Algorithm\DES Algorithm\bin\Debug\DES Algorithm.exe
+P:\Programowanie\Visual Studio\DES Algorithm\DES Algorithm\bin\Debug\DES Algorithm.pdb
+P:\Programowanie\Visual Studio\DES Algorithm\DES Algorithm\obj\Debug\DES Algorithm.csprojResolveAssemblyReference.cache
+P:\Programowanie\Visual Studio\DES Algorithm\DES Algorithm\obj\Debug\DES Algorithm.csproj.CoreCompileInputs.cache
+P:\Programowanie\Visual Studio\DES Algorithm\DES Algorithm\obj\Debug\DES Algorithm.exe
+P:\Programowanie\Visual Studio\DES Algorithm\DES Algorithm\obj\Debug\DES Algorithm.pdb
