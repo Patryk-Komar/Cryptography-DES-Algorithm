@@ -13,11 +13,14 @@ namespace DES_Algorithm {
 
             DES des = new DES();
             des.ReadInput();
-            //des.InitialPermutation();
+            des.InitialPermutation();
             des.PermutedChoice();
-            des.TransformKeysBlocks();
-            //des.TransformKeysBlocks();
-            //des.Wypisz();
+            des.TransformSubkeys();
+            des.XORowanko();
+            des.xd();
+            des.ConnectDecryptionOutput();
+            des.DenyInitialPermutation();
+            
 
             Console.ReadKey();
 
