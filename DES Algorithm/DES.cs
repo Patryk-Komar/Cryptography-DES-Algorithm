@@ -8,14 +8,318 @@ using System.IO;
 namespace DES_Algorithm {
 
     public class DES {
+
+        
+        #region Dane potrzebne do przeprowadzenia algorytmu szyfrowania
+
+        #region Tekst jawny
+
+        private int [] encryptionInput;
+
+        private int encryptionInputBlocksNumber;
+
+        private int [,] encryptionInputBlocks;
+
+        #endregion
+
+        #region Permutacja tekstu jawnego
+        
+        private int [,] encryptionInputPermutedBlocks;
+
+        private int [,,] encryptionInputPermutedBlocksSplit;
+
+        #endregion
+
+        #region Klucz
+
+        private int [] encryptionKey;
+
+        private int [,] encryptionSplitKey;
+
+        private int [] encryptionKeyPlus;
+
+        private int [] encryptionKeyPlusLeftPart;
+        private int [] encryptionKeyPlusRightPart;
+
+        private int [,] permutedChoiceEncryptionSubkeys;
+        private int [,,] permutedChoiceEncryptionSubkeysBlocks;
+
+        private int [,] encryptionSubkeys;
+
+        #endregion
+
+        #region Tekst odszyfrowany
+        
+        private int [,,] almostEncryptionOutputBlocksSplit;
+
+        private int [,] almostEncryptionOutputBlocks;
+
+        private int [,] encryptionOutputBlocks;
+        
+        private int [] encryptionOutput;
+
+        #endregion
+
+
+        #endregion
+
+
+        
+
+
+        public void ReadEncryptionInput () {
+
+            #region Czytanie pliku wejściowego
+
+            StreamReader streamReader = new StreamReader("encryption-input.txt");
+
+            string encryptionInputString = streamReader.ReadLine();
+            string encryptionKeyString = streamReader.ReadLine();
+
+            #endregion
+
+            #region Obsługa tekstu zaszyfrowanego
+            
+            // Sprawdzanie formatu zaszyfrowanego tekstu
+
+            bool binaryFormat = true;
+            
+            for (int i=0; i<encryptionInputString.Length; i++)
+                if (encryptionInputString[i]!='0' && encryptionInputString[i]!='1')
+                    binaryFormat = false;
+
+            // Jeśli format zaszyfrowanego tekstu jest bibnarny
+
+            if (binaryFormat) {
+                encryptionInput = new int [encryptionInputString.Length];
+                encryptionInputBlocksNumber = encryptionInputString.Length / 64;
+                encryptionInputBlocks = new int [encryptionInputBlocksNumber,64];
+                encryptionInputPermutedBlocks = new int [encryptionInputBlocksNumber,64];
+                encryptionInputPermutedBlocksSplit = new int [encryptionInputBlocksNumber,2,32];
+                for (int i=0; i<encryptionInputBlocksNumber; i++) {
+                    for (int j=0; j<64; j++) {
+                        encryptionInput[64*i+j] = Int32.Parse(encryptionInputString[64*i+j].ToString());
+                        encryptionInputBlocks[i,j] = Int32.Parse(encryptionInputString[64*i+j].ToString());
+                    }
+                }
+            }
+
+            // Jeśli format zaszyfrowanego tekstu jest heksadecymalny
+
+            else {
+                
+            }
+
+            #endregion
+            
+            #region Obsługa klucza szyfrowania
+
+            encryptionKey = new int [64];
+
+            encryptionSplitKey = new int [2,32];
+
+            for (int i=0; i<32; i++) {
+                encryptionKey[i] = Int32.Parse(encryptionKeyString[i].ToString());
+                encryptionKey[i+32] = Int32.Parse(encryptionKeyString[i+32].ToString());
+                encryptionSplitKey[0,i] = Int32.Parse(encryptionKeyString[i].ToString());
+                encryptionSplitKey[1,i] = Int32.Parse(encryptionKeyString[i+32].ToString());
+            }
+            
+            encryptionKeyPlus = new int [56];
+
+            encryptionKeyPlusLeftPart = new int [28];
+            encryptionKeyPlusRightPart = new int [28];
+            
+            permutedChoiceEncryptionSubkeys = new int [16,56];
+            permutedChoiceEncryptionSubkeysBlocks = new int [16,2,28];
+
+            encryptionSubkeys = new int [16,48];
+
+            #endregion
+
+            #region Obsługa tekstu odszyfrowanego
+            
+            almostEncryptionOutputBlocksSplit = new int [encryptionInputBlocksNumber,2,32];
+            almostEncryptionOutputBlocks = new int [encryptionInputBlocksNumber,64];
+            encryptionOutputBlocks = new int [encryptionInputBlocksNumber,64];
+            encryptionOutput = new int [encryptionInputString.Length];
+
+            #endregion
+
+        }
+
+
+        public void EncryptionInitialPermutation () {
+
+            for (int i=0; i<encryptionInputBlocksNumber; i++) {
+                for (int j=0; j<64; j++)
+                    encryptionInputPermutedBlocks[i,j] = encryptionInputBlocks[i,initialPermutationNumbers[j]-1];
+                for (int j=0; j<32; j++) {
+                    encryptionInputPermutedBlocksSplit[i,0,j] = encryptionInputPermutedBlocks[i,j];
+                    encryptionInputPermutedBlocksSplit[i,1,j] = encryptionInputPermutedBlocks[i,j+32];
+                }
+            }
+
+        }
+        
+
+        public void GenerateEncryptionSubkeys () {
+
+            // Ustalanie K+
+
+            for (int i=0; i<56; i++)
+                encryptionKeyPlus[i] = encryptionKey[permutedChoiceOneNumbers[i]-1];
+
+            // Podział K+ na dwie części
+
+            for (int i=0; i<28; i++) {
+                encryptionKeyPlusLeftPart[i] = encryptionKeyPlus[i];
+                encryptionKeyPlusRightPart[i] = encryptionKeyPlus[i+28];
+            }
+
+            // Stworzenie tymczasowych kluczy pomocniczych
+
+            int [] tempLeftKey = new int [28];
+            int [] tempRightKey = new int [28];
+            int [] tempWholeKey = new int [56];
+
+            // Przypisanie wartości do lewego oraz prawego klucza tymczasowego jeszcze przed rozpoczęciem iteracji
+
+            for (int i=0; i<28; i++) {
+                tempLeftKey[i] = encryptionKeyPlusLeftPart[i];
+                tempRightKey[i] = encryptionKeyPlusRightPart[i];
+            }
+            
+            // Generowanie szesnastu kluczy
+
+            for (int i=0; i<16; i++) {
+
+                // Realizacja aktualnej iteracji na oficjalnej tablicy kluczy
+
+                int shift = keysTransformNumbers[i];
+
+                for (int j=0; j<28-shift; j++) {
+                    permutedChoiceEncryptionSubkeysBlocks[i,0,j] = tempLeftKey[j+shift];
+                    permutedChoiceEncryptionSubkeysBlocks[i,1,j] = tempRightKey[j+shift];
+                }
+                for (int j=28-shift; j<28; j++) {
+                    permutedChoiceEncryptionSubkeysBlocks[i,0,j] = tempLeftKey[j-(28-shift)];
+                    permutedChoiceEncryptionSubkeysBlocks[i,1,j] = tempRightKey[j-(28-shift)];
+                }
+
+                // Aktualizowanie kluczy pomocniczych
+
+                for (int j=0; j<28; j++) {
+                    tempLeftKey[j] = permutedChoiceEncryptionSubkeysBlocks[i,0,j];
+                    tempRightKey[j] = permutedChoiceEncryptionSubkeysBlocks[i,1,j];
+                    tempWholeKey[j] = tempLeftKey[j];
+                    tempWholeKey[j+28] = tempRightKey[j];
+                }
+                for (int j=0; j<28; j++) {
+                    permutedChoiceEncryptionSubkeys[i,j] = tempLeftKey[j];
+                    permutedChoiceEncryptionSubkeys[i,j+28] = tempRightKey[j];
+                    permutedChoiceEncryptionSubkeysBlocks[i,0,j] = tempLeftKey[j];
+                    permutedChoiceEncryptionSubkeysBlocks[i,1,j] = tempRightKey[j];
+                }
+            }
+        }
+
+
+
+        public void TransformEncryptionSubkeys () {
+            for (int i=0; i<16; i++)
+                for (int j=0; j<48; j++)
+                    encryptionSubkeys[i,j] = permutedChoiceEncryptionSubkeys[i,permutedChoiceTwoNumbers[j]-1];
+        }
+
+
+        public void EncryptionAlgorithm () {
+
+            for (int i=0; i<encryptionInputBlocksNumber; i++) {
+
+                int [] currentKey = new int [48];
+                int [] currentLeft = new int [32];
+                int [] currentRight = new int [32];
+                
+                // Mejbi propabli są poczebne L i R
+
+                for (int j=0; j<32; j++) {
+                    currentLeft[j] = encryptionInputPermutedBlocks[i,j];
+                    currentRight[j] = encryptionInputPermutedBlocks[i,j+32];
+                }
+                
+                almostEncryptionOutput = new int [64];
+                
+                for (int j=0; j<16; j++) {
+                    for (int k=0; k<48; k++)
+                        currentKey[k] = encryptionSubkeys[j,k];
+                    int [] tempRight = new int [32];
+                    int [] extendedRight = new int [48];
+                    int [] XOROne = new int [48];
+                    for (int k=0; k<32; k++)
+                        tempRight[k] = currentRight[k];
+                    for (int k=0; k<48; k++) {
+                        extendedRight[k] = tempRight[enlargementTableNumbers[k]-1];
+                        bool xorOne = ((extendedRight[k]==1 && currentKey[k]==0) || (extendedRight[k]==0 && currentKey[k]==1));
+                        XOROne[k] = (xorOne) ? 1 : 0;
+                    }
+                    int [] permutationInput = new int [32];
+                    int [] permutationOutput = new int [32];
+                    for (int k=0; k<8; k++) {
+                        int rowIndex = 2*XOROne[k*6] + 1*XOROne[k*6+5];
+                        int columnIndex = 8*XOROne[k*6+1] + 4*XOROne[k*6+2] + 2*XOROne[k*6+3] + 1*XOROne[k*6+4];
+                        int intValue = S[k,rowIndex*16+columnIndex];
+                        string stringValue = Convert.ToString(intValue,2);
+                        int [] binaryValue = new int [4];
+                        for (int l=0; l<4-stringValue.Length; l++)
+                            binaryValue[l] = 0;
+                        for (int l=0; l<stringValue.Length; l++)
+                            binaryValue[l+(4-stringValue.Length)] = Int32.Parse(stringValue[l].ToString());
+                        for (int l=0; l<4; l++)
+                            permutationInput[k*4+l] = binaryValue[l];
+                    }
+                    for (int k=0; k<32; k++)
+                        permutationOutput[k] = permutationInput[permutationNumbers[k]-1];
+                    for (int k=0; k<32; k++) {
+                        bool xorTwo = ((currentLeft[k]==1 && permutationOutput[k]==0) || (currentLeft[k]==0 && permutationOutput[k]==1));
+                        currentRight[k] = (xorTwo) ? 1 : 0;
+                    }
+                    for (int k=0; k<32; k++)
+                        currentLeft[k] = tempRight[k];
+                }
+
+                for (int j=0; j<32; j++) {
+                    almostEncryptionOutputBlocks[i,j] = currentRight[j];
+                    almostEncryptionOutputBlocks[i,j+32] = currentLeft[j];
+                }
+
+                for (int j=0; j<64; j++)
+                    encryptionOutputBlocks[i,j] = almostEncryptionOutputBlocks[i,inversedInitialPermutationNumbers[j]-1];
+
+            }
+
+            for (int i=0; i<encryptionInputBlocksNumber; i++)
+                for (int j=0; j<64; j++)
+                    encryptionOutput[64*i+j] = encryptionOutputBlocks[i,j];
+            
+            for (int i=0; i<encryptionInputBlocksNumber; i++)
+                for (int j=0; j<64; j++)
+                    Console.Write(encryptionOutput[64*i+j]);
+
+
+        }
+
+
+
+
+        
+        
+
         
         private int inputLength;
         private int keyLength;
 
         private int iterations;
-
-        private int [] encryptionInput;
-        private int [] encryptionOutput;
 
         private int [] almostEncryptionOutput;
         
@@ -36,12 +340,6 @@ namespace DES_Algorithm {
 
         private int [,] transformedSubkeys;
 
-        private int [] decryptionInput;
-        private int [] decryptionOutput;
-        
-        private int [] almostDecryptionOutput;
-
-        private int [,] almostDecryptionOutputSplit;
 
         private int [] initialPermutationNumbers = {58,50,42,34,26,18,10,2,60,52,44,36,28,20,12,4,62,54,46,38,30,22,14,6,64,56,48,40,32,24,16,8,57,49,41,33,25,17,9,1,59,51,43,35,27,19,11,3,61,53,45,37,29,21,13,5,63,55,47,39,31,23,15,7};
 
@@ -63,7 +361,7 @@ namespace DES_Algorithm {
         public DES () {}
 
         public void ReadInput () {
-            StreamReader streamReader = new StreamReader("input.txt");
+            StreamReader streamReader = new StreamReader("encryption-input.txt");
             string stringInput = streamReader.ReadLine();
             string stringKey = streamReader.ReadLine();
             this.inputLength = stringInput.Length;
@@ -71,7 +369,6 @@ namespace DES_Algorithm {
             this.iterations = stringInput.Length / 64;
             this.encryptionInput = new int [inputLength];
             this.encryptionOutput = new int [inputLength];
-            this.almostDecryptionOutput = new int [inputLength];
             this.decryptionOutput = new int [inputLength];
             this.key = new int [keyLength];
             this.keyPlus = new int [56];
@@ -83,7 +380,6 @@ namespace DES_Algorithm {
             this.permutedChoiceKeysBlocks = new int [16,2,28]; // 16 iteracji, 2 części (lewa - 0, prawa - 1), 28 bitów na stronę
             this.transformedSubkeys = new int [16,48]; // 16 iteracji, 48 bitów na klucz (scalone dwie części po transformacji)
             this.almostEncryptionOutput = new int [64];
-            this.almostDecryptionOutputSplit = new int [2,32];
             for (int i=0; i<inputLength; i++)
                 encryptionInput[i] = (stringInput[i]=='1') ? 1 : 0;
             for (int i=0; i<keyLength; i++)
@@ -230,6 +526,10 @@ namespace DES_Algorithm {
                 }
                 for (int j=0; j<32; j++)
                     currentLeft[j] = tempRight[j];
+
+                
+
+
                 /*Console.Write("L"+(i+1)+" - ");
                 for (int j=0; j<32; j++)
                     Console.Write(currentLeft[j]);
@@ -246,36 +546,257 @@ namespace DES_Algorithm {
                 almostEncryptionOutput[i+32] = currentLeft[i];
             }
 
-            for (int i=0; i<64; i++)
-                encryptionOutput[inversedInitialPermutationNumbers[i]-1] = almostEncryptionOutput[i];
+            for (int i=0; i<64; i++) {
+                encryptionOutput[i] = almostEncryptionOutput[inversedInitialPermutationNumbers[i]-1];
+                Console.Write(encryptionOutput[i]);
+            }
 
         }
+
+
+
+
+
+
+        #region Dane potrzebne do przeprowadzenia algorytmu deszyfrowania
+
+        #region Tekst zaszyfrowany
+
+        private int [] decryptionInput;
+
+        private int decryptionInputBlocksNumber;
+
+        private int [,] decryptionInputBlocks;
+
+        #endregion
+
+        #region Klucz
+
+        private int [] decryptionKey;
+
+        private int [,] decryptionSplitKey;
+
+        private int [] decryptionKeyPlus;
+
+        private int [] decryptionKeyPlusLeftPart;
+        private int [] decryptionKeyPlusRightPart;
+
+        private int [,] permutedChoiceDecryptionSubkeys;
+        private int [,,] permutedChoiceDecryptionSubkeysBlocks;
+
+        private int [,] decryptionSubkeys;
+
+        #endregion
+
+        #region Tekst odszyfrowany
+        
+        private int [,,] almostDecryptionOutputBlocksSplit;
+
+        private int [,] almostDecryptionOutputBlocks;
+
+        private int [,] decryptionOutputBlocks;
+        
+        private int [] decryptionOutput;
+
+        #endregion
+
+
+        #endregion
 
 
         
 
 
-        public void xd () {
-            almostDecryptionOutputSplit = new int [2,32];
-            for (int i=0; i<32; i++) {
-                almostDecryptionOutputSplit[0,i] = initialPermutedInputSplit[0,i];
-                almostDecryptionOutputSplit[1,i] = initialPermutedInputSplit[1,i];
+        public void ReadDecryptionInput () {
+
+            #region Czytanie pliku wejściowego
+
+            StreamReader streamReader = new StreamReader("decryption-input.txt");
+
+            string decryptionInputString = streamReader.ReadLine();
+            string decryptionKeyString = streamReader.ReadLine();
+
+            #endregion
+
+            #region Obsługa tekstu zaszyfrowanego
+            
+            // Sprawdzanie formatu zaszyfrowanego tekstu
+
+            bool binaryFormat = true;
+            
+            for (int i=0; i<decryptionInputString.Length; i++)
+                if (decryptionInputString[i]!='0' && decryptionInputString[i]!='1')
+                    binaryFormat = false;
+
+            // Jeśli format zaszyfrowanego tekstu jest bibnarny
+
+            if (binaryFormat) {
+                decryptionInput = new int [decryptionInputString.Length];
+                decryptionInputBlocksNumber = decryptionInputString.Length / 64;
+                decryptionInputBlocks = new int [decryptionInputBlocksNumber,64];
+                for (int i=0; i<decryptionInputBlocksNumber; i++) {
+                    for (int j=0; j<64; j++) {
+                        decryptionInput[64*i+j] = Int32.Parse(decryptionInputString[64*i+j].ToString());
+                        decryptionInputBlocks[i,j] = Int32.Parse(decryptionInputString[64*i+j].ToString());
+                    }
+                }
             }
+
+            // Jeśli format zaszyfrowanego tekstu jest heksadecymalny
+
+            else {
+                
+            }
+
+            #endregion
+            
+            #region Obsługa klucza szyfrowania
+
+            decryptionKey = new int [64];
+
+            for (int i=0; i<32; i++) {
+                decryptionKey[i] = Int32.Parse(decryptionKeyString[i].ToString());
+                decryptionKey[i+32] = Int32.Parse(decryptionKeyString[i+32].ToString());
+                decryptionSplitKey[0,i] = Int32.Parse(decryptionKeyString[i].ToString());
+                decryptionSplitKey[1,i] = Int32.Parse(decryptionKeyString[i+32].ToString());
+            }
+            
+            decryptionKeyPlus = new int [56];
+
+            decryptionKeyPlusLeftPart = new int [28];
+            decryptionKeyPlusRightPart = new int [28];
+            
+            permutedChoiceDecryptionSubkeys = new int [16,56];
+            permutedChoiceDecryptionSubkeysBlocks = new int [16,2,28];
+
+            decryptionSubkeys = new int [16,48];
+
+            #endregion
+
+            #region Obsługa tekstu odszyfrowanego
+            
+            almostDecryptionOutputBlocksSplit = new int [decryptionInputBlocksNumber,2,32];
+            almostDecryptionOutputBlocks = new int [decryptionInputBlocksNumber,64];
+            decryptionOutputBlocks = new int [decryptionInputBlocksNumber,64];
+            decryptionOutput = new int [decryptionInputString.Length];
+            #endregion
+
+        }
+        
+
+        public void GenerateDecryptionSubkeys () {
+
+            // Ustalanie K+
+
+            for (int i=0; i<56; i++)
+                decryptionKeyPlus[i] = decryptionKey[permutedChoiceOneNumbers[i]-1];
+
+            // Podział K+ na dwie części
+
+            for (int i=0; i<28; i++) {
+                decryptionKeyPlusLeftPart[i] = decryptionKeyPlus[i];
+                decryptionKeyPlusRightPart[i] = decryptionKeyPlus[i+28];
+            }
+
+            // Stworzenie tymczasowych kluczy pomocniczych
+
+            int [] tempLeftKey = new int [28];
+            int [] tempRightKey = new int [28];
+            int [] tempWholeKey = new int [56];
+
+            // Przypisanie wartości do lewego oraz prawego klucza tymczasowego jeszcze przed rozpoczęciem iteracji
+
+            for (int i=0; i<28; i++) {
+                tempLeftKey[i] = decryptionKeyPlusLeftPart[i];
+                tempRightKey[i] = decryptionKeyPlusRightPart[i];
+            }
+            
+            // Generowanie szesnastu kluczy
+
+            for (int i=0; i<16; i++) {
+
+                // Realizacja aktualnej iteracji na oficjalnej tablicy kluczy
+
+                int shift = keysTransformNumbers[i];
+
+                for (int j=0; j<28-shift; j++) {
+                    permutedChoiceDecryptionSubkeysBlocks[i,0,j] = tempLeftKey[j+shift];
+                    permutedChoiceDecryptionSubkeysBlocks[i,1,j] = tempRightKey[j+shift];
+                }
+                for (int j=28-shift; j<28; j++) {
+                    permutedChoiceDecryptionSubkeysBlocks[i,0,j] = tempLeftKey[j-(28-shift)];
+                    permutedChoiceDecryptionSubkeysBlocks[i,1,j] = tempRightKey[j-(28-shift)];
+                }
+
+                // Aktualizowanie kluczy pomocniczych
+
+                for (int j=0; j<28; j++) {
+                    tempLeftKey[j] = permutedChoiceDecryptionSubkeysBlocks[i,0,j];
+                    tempRightKey[j] = permutedChoiceDecryptionSubkeysBlocks[i,1,j];
+                    tempWholeKey[j] = tempLeftKey[j];
+                    tempWholeKey[j+28] = tempRightKey[j];
+                }
+                for (int j=0; j<28; j++) {
+                    permutedChoiceDecryptionSubkeys[i,j] = tempLeftKey[j];
+                    permutedChoiceDecryptionSubkeys[i,j+28] = tempRightKey[j];
+                    permutedChoiceDecryptionSubkeysBlocks[i,0,j] = tempLeftKey[j];
+                    permutedChoiceDecryptionSubkeysBlocks[i,1,j] = tempRightKey[j];
+                }
+            }
+        }
+
+
+        public void InverseSubkeysIterations () {
+
         }
 
 
         public void ConnectDecryptionOutput () {
-            for (int i=0; i<32; i++) {
-                almostDecryptionOutput[i] = almostDecryptionOutputSplit[0,i];
-                almostDecryptionOutput[i+32] = almostDecryptionOutputSplit[1,i];
+
+            // Łączenie obu stron poszczególnych bloków
+            
+            for (int i=0; i<decryptionInputBlocksNumber; i++) {
+                for (int j=0; j<32; j++) {
+                    almostDecryptionOutputBlocks[i,j] = almostDecryptionOutputBlocksSplit[i,0,j];
+                    almostDecryptionOutputBlocks[i,j+32] = almostDecryptionOutputBlocksSplit[i,1,j];
+                }
             }
+
         }
 
         public void DenyInitialPermutation () {
+
+            // Odwracanie permutacji początkowej na poszczególnych blokach
+
+            for (int i=0; i<decryptionInputBlocksNumber; i++)
+                for (int j=0; j<64; j++)
+                    decryptionOutputBlocks[i,initialPermutationNumbers[j]-1] = almostDecryptionOutputBlocks[i,j];
+
+            // Synteza bloków odszyfrowanego tekstu jawnego
+
+            for (int i=0; i<decryptionInputBlocksNumber; i++)
+                for (int j=0; j<64; j++)
+                    decryptionOutput[64*i+j] = decryptionOutputBlocks[i,j];
+
+        }
+
+
+        private void DisplayDecryptionResult () {
+            Console.Clear();
+            Console.WriteLine("   Etap drugi - deszyfrowanie\n\n");
+            Console.Write("      Zaszyfrowane wyjście: ");
+            for (int i=0; i<decryptionInput.Length; i++)
+                Console.Write(decryptionInput[i]);
+            Console.WriteLine("\n");
+            Console.Write("      Klucz: ");
             for (int i=0; i<64; i++)
-                decryptionOutput[initialPermutationNumbers[i]-1] = almostDecryptionOutput[i];
-            for (int i=0; i<64; i++)
+                Console.Write(decryptionKey[i]);
+            Console.WriteLine("\n");
+            Console.Write("      Odszyfrowane wejście: ");
+            for (int i=0; i<decryptionOutput.Length; i++)
                 Console.Write(decryptionOutput[i]);
+            Console.WriteLine("\n\n\n");
+            Console.Write("   Wciśnij dowolny klawisz, aby zakończyć działanie programu.");
         }
 
 
