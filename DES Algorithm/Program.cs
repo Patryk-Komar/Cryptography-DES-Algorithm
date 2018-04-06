@@ -12,18 +12,12 @@ namespace DES_Algorithm {
         static void Main (string[] args) {
 
             DES des = new DES();
-            //des.ReadInput();
-            //des.InitialPermutation();
-            //des.PermutedChoice();
-            //des.TransformSubkeys();
-            //des.XORowanko();
-            //des.ConnectDecryptionOutput();
-            //des.DenyInitialPermutation();
-            des.ReadEncryptionInput();
-            des.EncryptionInitialPermutation();
-            des.GenerateEncryptionSubkeys();
-            des.TransformEncryptionSubkeys();
-            des.EncryptionAlgorithm();
+            des.ReadDecryptionInput();
+            des.GenerateDecryptionSubkeys();
+            des.TransformDecryptionSubkeys();
+            des.InverseSubkeysIterations();
+            des.DenyInitialPermutation();
+            des.DisplayDecryptionResult();
 
             Console.ReadKey();
 
