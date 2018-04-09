@@ -4,10 +4,32 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Drawing.Imaging;
+using System.Drawing;
 
 namespace DES_Algorithm {
 
     public class DES {
+
+        
+        #region Sprawdzenie formatu ciągu wejściowego
+
+        public int CheckInputFormat (string inputText) {
+            bool binaryOnly = true;
+            for (int i=0; i<inputText.Length; i++) {
+                if (inputText[i]!='0' && inputText[i]!='1' && inputText[i]!='2' && inputText[i]!='3' && inputText[i]!='4' && inputText[i]!='5' && inputText[i]!='6' && inputText[i]!='7' && inputText[i]!='8' && inputText[i]!='9' && inputText[i]!='A' && inputText[i]!='B' && inputText[i]!='C' && inputText[i]!='D' && inputText[i]!='E' && inputText[i]!='F')
+                    return 2;
+                else if (inputText[i]!='0' && inputText[i]!='1')
+                    binaryOnly = false;
+            }
+            if (binaryOnly)
+                return 0;
+            else
+                return 1;
+        }
+
+        #endregion
+
 
         #region Konwersja czterech bitów na liczbę szesnastkową
 
@@ -35,6 +57,43 @@ namespace DES_Algorithm {
             }
         }
         
+        #endregion
+
+
+        #region Konwersja łańcucha znaków do tablicy bitów
+
+        public int [] ConvertString (string inputText) {
+            int [] binaryArray = new int [8*((inputText.Length/8)*8)];
+            int iterations = 8 * (inputText.Length / 8);
+            for (int i=0; i<iterations; i++) {
+                int ascii = inputText[i];
+                string stringValue = Convert.ToString(ascii,2);
+                for (int j=0; j<8-stringValue.Length; j++)
+                    binaryArray[8*i+j] = 0;
+                for (int j=0; j<stringValue.Length; j++)
+                    binaryArray[8*i+j+(8-stringValue.Length)] = Int32.Parse(stringValue[j].ToString());
+            }
+            return binaryArray;
+        }
+
+        #endregion
+
+        #region Konwersja tablicy bitów do łańcucha znaków
+
+        public string ConvertBitArray (int [] binaryArray) {
+            StringBuilder outputBuilder = new StringBuilder();
+            for (int i=0; i<binaryArray.Length/8; i++) {
+                int intValue = 0;
+                for (int j=7; j>=0; j--) {
+                    if (binaryArray[8*i+j]==1)
+                        intValue += Int32.Parse(Math.Pow(2,7-j).ToString());
+                }
+                char decryptedChar = (char) intValue;
+                outputBuilder.Append(decryptedChar);
+            }
+            return outputBuilder.ToString();
+        }
+
         #endregion
 
 
@@ -78,7 +137,7 @@ namespace DES_Algorithm {
 
         private int [,] encryptionInputBlocks;
 
-        private bool encryptionBinaryFormat;
+        private int encryptionInputFormat;
 
         #endregion
 
@@ -143,16 +202,16 @@ namespace DES_Algorithm {
             
             // Sprawdzanie formatu zaszyfrowanego tekstu
 
-            encryptionBinaryFormat = true;
-            
-            for (int i=0; i<encryptionInputString.Length; i++)
-                if (encryptionInputString[i]!='0' && encryptionInputString[i]!='1')
-                    encryptionBinaryFormat = false;
+            encryptionInputFormat = CheckInputFormat(encryptionInputString);
 
             // Jeśli format zaszyfrowanego tekstu jest bibnarny
 
-            if (encryptionBinaryFormat) {
-                encryptionInput = new int [encryptionInputString.Length];
+            if (encryptionInputFormat == 0) {
+                encryptionInput = new int [64*(encryptionInputString.Length/64)];
+                char [] input = new char [encryptionInput.Length];
+                for (int i=0; i<encryptionInput.Length; i++)
+                    input[i] = encryptionInputString[i];
+                encryptionInputString = new string(input);
                 encryptionInputBlocksNumber = encryptionInputString.Length / 64;
                 encryptionInputBlocks = new int [encryptionInputBlocksNumber,64];
                 encryptionInputPermutedBlocks = new int [encryptionInputBlocksNumber,64];
@@ -167,8 +226,12 @@ namespace DES_Algorithm {
 
             // Jeśli format zaszyfrowanego tekstu jest heksadecymalny
 
-            else {
-                encryptionInput = new int [4*encryptionInputString.Length];
+            else if (encryptionInputFormat == 1) {
+                encryptionInput = new int [4*((encryptionInputString.Length/4)*4)];
+                char [] input = new char [encryptionInput.Length/4];
+                for (int i=0; i<encryptionInput.Length/4; i++)
+                    input[i] = encryptionInputString[i];
+                encryptionInputString = new string(input);
                 encryptionInputBlocksNumber = encryptionInputString.Length / 16;
                 encryptionInputBlocks = new int [encryptionInputBlocksNumber,64];
                 encryptionInputPermutedBlocks = new int [encryptionInputBlocksNumber,64];
@@ -216,6 +279,22 @@ namespace DES_Algorithm {
                         }
                     }
                 }
+            }
+
+            else if (encryptionInputFormat == 2) {
+                encryptionInput = new int [8*((encryptionInputString.Length/8)*8)];
+                char [] input = new char [encryptionInput.Length/8];
+                for (int i=0; i<encryptionInput.Length/8; i++)
+                    input[i] = encryptionInputString[i];
+                encryptionInputString = new string(input);
+                encryptionInputBlocksNumber = encryptionInputString.Length / 8;
+                encryptionInputBlocks = new int [encryptionInputBlocksNumber,64];
+                encryptionInputPermutedBlocks = new int [encryptionInputBlocksNumber,64];
+                encryptionInputPermutedBlocksSplit = new int [encryptionInputBlocksNumber,2,32];
+                encryptionInput = ConvertString(encryptionInputString);
+                for (int i=0; i<encryptionInputBlocksNumber; i++)
+                    for (int j=0; j<64; j++)
+                        encryptionInputBlocks[i,j] = encryptionInput[8*i+j];
             }
 
             #endregion
@@ -425,7 +504,7 @@ namespace DES_Algorithm {
 
         public void FormatEncryptionOutput () {
             StringBuilder outputBuilder = new StringBuilder();
-            if (!encryptionBinaryFormat) {
+            if (encryptionInputFormat == 1) {
                 for (int i=0; i<encryptionInputString.Length; i++) {
                     int [] binaryValue = new int [4];
                     binaryValue[0] = encryptionOutput[4*i];
@@ -434,8 +513,10 @@ namespace DES_Algorithm {
                     binaryValue[3] = encryptionOutput[4*i+3];
                     outputBuilder.Append(BinaryHex(binaryValue));
                 }
+                encryptionOutputString = outputBuilder.ToString();
             }
-            encryptionOutputString = outputBuilder.ToString();
+            else if (encryptionInputFormat == 2)
+                encryptionOutputString = ConvertBitArray(encryptionOutput);
         }
 
         #endregion
@@ -445,7 +526,7 @@ namespace DES_Algorithm {
         #region Wypisanie efektu końcowego szyfrowania
 
         public void DisplayEncryptionResult () {
-            if (encryptionBinaryFormat) {
+            if (encryptionInputFormat == 0) {
                 Console.Clear();
                 Console.WriteLine("   Etap pierwszy - szyfrowanie\n\n\n");
                 Console.Write("      Tekst jawny: ");
@@ -460,9 +541,9 @@ namespace DES_Algorithm {
                 for (int i=0; i<encryptionOutput.Length; i++)
                     Console.Write(encryptionOutput[i]);
                 Console.WriteLine("\n\n\n");
-                Console.Write("   Wciśnij dowolny klawisz, aby przejść do drugiego etapu.");
+                Console.Write("   Wciśnij dowolny klawisz, aby kontynuować.");
             }
-            else {
+            else if (encryptionInputFormat == 1) {
                 Console.Clear();
                 Console.WriteLine("   Etap pierwszy - szyfrowanie\n\n\n");
                 Console.Write("      Tekst jawny (szesnastkowo): ");
@@ -471,6 +552,43 @@ namespace DES_Algorithm {
                     if ((i+1) % 16 == 0 && i+1 != encryptionInputString.Length)
                         Console.Write(" ");
                 }
+                Console.WriteLine("\n");
+                Console.Write("      Tekst jawny (bitowo): ");
+                for (int i=0; i<encryptionInput.Length; i++) {
+                    Console.Write(encryptionInput[i]);
+                    if ((i+1) % 4 == 0 && i+1 != encryptionInput.Length)
+                        Console.Write(" ");
+                    if ((i+1) % 64 == 0 && i+1 != encryptionInput.Length)
+                        Console.Write(" ");
+                }
+                Console.WriteLine("\n\n");
+                Console.Write("      Klucz: ");
+                for (int i=0; i<64; i++)
+                    Console.Write(encryptionKey[i]);
+                Console.WriteLine("\n\n");
+                Console.Write("      Tekst zaszyfrowany (bitowo): ");
+                for (int i=0; i<encryptionOutput.Length; i++) {
+                    Console.Write(encryptionOutput[i]);
+                    if ((i+1) % 4 == 0 && i+1 != encryptionOutput.Length)
+                        Console.Write(" ");
+                    if ((i+1) % 64 == 0 && i+1 != encryptionOutput.Length)
+                        Console.Write(" ");
+                }
+                Console.WriteLine("\n");
+                Console.Write("      Tekst zaszyfrowany (szesnastkowo): ");
+                for (int i=0; i<encryptionOutputString.Length; i++) {
+                    Console.Write(encryptionOutputString[i]);
+                    if ((i+1) % 16 == 0 && i+1 != encryptionOutputString.Length)
+                        Console.Write(" ");
+                }
+                Console.WriteLine("\n\n\n");
+                Console.Write("   Wciśnij dowolny klawisz, aby kontynuować.");
+            }
+            else if (encryptionInputFormat == 2) {
+                Console.Clear();
+                Console.WriteLine("   Etap pierwszy - szyfrowanie\n\n\n");
+                Console.Write("      Tekst jawny: ");
+                Console.Write(encryptionInputString);
                 Console.WriteLine("\n");
                 Console.Write("      Tekst jawny (bitowo): ");
                 for (int i=0; i<encryptionInput.Length; i++) {
@@ -494,14 +612,10 @@ namespace DES_Algorithm {
                         Console.Write(" ");
                 }
                 Console.WriteLine("\n");
-                Console.Write("      Tekst zaszyfrowany (szesnastkowo): ");
-                for (int i=0; i<encryptionOutputString.Length; i++) {
-                    Console.Write(encryptionOutputString[i]);
-                    if ((i+1) % 16 == 0 && i+1 != encryptionOutputString.Length)
-                        Console.Write(" ");
-                }
-                Console.WriteLine("\n\n\n");
-                Console.Write("   Wciśnij dowolny klawisz, aby przejść do drugiego etapu.");
+                Console.Write("      Tekst zaszyfrowany:\n\n");
+                Console.Write(encryptionOutputString);
+                Console.WriteLine("\n\n");
+                Console.Write("   Wciśnij dowolny klawisz, aby kontynuować.");
             }
 
             Console.ReadKey();
@@ -525,7 +639,7 @@ namespace DES_Algorithm {
 
         private int [,] decryptionInputBlocks;
 
-        private bool decryptionBinaryFormat;
+        private int decryptionInputFormat;
 
         #endregion
 
@@ -582,16 +696,16 @@ namespace DES_Algorithm {
             
             // Sprawdzanie formatu zaszyfrowanego tekstu
 
-            decryptionBinaryFormat = true;
-            
-            for (int i=0; i<decryptionInputString.Length; i++)
-                if (decryptionInputString[i]!='0' && decryptionInputString[i]!='1')
-                    decryptionBinaryFormat = false;
+            decryptionInputFormat = CheckInputFormat(decryptionInputString);
 
             // Jeśli format zaszyfrowanego tekstu jest bibnarny
 
-            if (decryptionBinaryFormat) {
-                decryptionInput = new int [decryptionInputString.Length];
+            if (decryptionInputFormat == 0) {
+                decryptionInput = new int [64*(decryptionInputString.Length/64)];
+                char [] input = new char [decryptionInput.Length];
+                for (int i=0; i<decryptionInput.Length; i++)
+                    input[i] = decryptionInputString[i];
+                decryptionInputString = new string(input);
                 decryptionInputBlocksNumber = decryptionInputString.Length / 64;
                 decryptionInputBlocks = new int [decryptionInputBlocksNumber,64];
                 for (int i=0; i<decryptionInputBlocksNumber; i++) {
@@ -604,11 +718,15 @@ namespace DES_Algorithm {
 
             // Jeśli format zaszyfrowanego tekstu jest heksadecymalny
 
-            else {
-                decryptionInput = new int [4*decryptionInputString.Length];
+            else if (decryptionInputFormat == 1) {
+                decryptionInput = new int [4*((decryptionInputString.Length/4)*4)];
+                char [] input = new char [decryptionInput.Length/4];
+                for (int i=0; i<decryptionInput.Length/4; i++)
+                    input[i] = decryptionInputString[i];
+                decryptionInputString = new string(input);
                 decryptionInputBlocksNumber = decryptionInputString.Length / 16;
                 decryptionInputBlocks = new int [decryptionInputBlocksNumber,64];
-                for (int i=0; i<encryptionInputBlocksNumber; i++) {
+                for (int i=0; i<decryptionInputBlocksNumber; i++) {
                     for (int j=0; j<16; j++) {
                         char hexValue = decryptionInputString[i*16+j];
                         int intValue;
@@ -652,7 +770,22 @@ namespace DES_Algorithm {
                     }
                 }
             }
-
+            else if (decryptionInputFormat == 2) {
+                decryptionInput = new int [8*((decryptionInputString.Length/8)*8)];
+                Console.Clear();
+                Console.WriteLine(decryptionInput.Length);
+                Console.Read();
+                char [] input = new char [decryptionInput.Length/8];
+                for (int i=0; i<decryptionInput.Length/8; i++)
+                    input[i] = decryptionInputString[i];
+                decryptionInputString = new string(input);
+                decryptionInputBlocksNumber = decryptionInputString.Length / 8;
+                decryptionInputBlocks = new int [decryptionInputBlocksNumber,64];
+                decryptionInput = ConvertString(decryptionInputString);
+                for (int i=0; i<decryptionInputBlocksNumber; i++)
+                    for (int j=0; j<64; j++)
+                        decryptionInputBlocks[i,j] = decryptionInput[8*i+j];
+            }
             #endregion
             
             #region Obsługa klucza szyfrowania
@@ -874,7 +1007,7 @@ namespace DES_Algorithm {
 
         public void FormatDecryptionOutput () {
             StringBuilder outputBuilder = new StringBuilder();
-            if (!decryptionBinaryFormat) {
+            if (decryptionInputFormat == 1) {
                 for (int i=0; i<decryptionInputString.Length; i++) {
                     int [] binaryValue = new int [4];
                     binaryValue[0] = decryptionOutput[4*i];
@@ -883,8 +1016,10 @@ namespace DES_Algorithm {
                     binaryValue[3] = decryptionOutput[4*i+3];
                     outputBuilder.Append(BinaryHex(binaryValue));
                 }
+                decryptionOutputString = outputBuilder.ToString();
             }
-            decryptionOutputString = outputBuilder.ToString();
+            else if (decryptionInputFormat == 2)
+                decryptionOutputString = ConvertBitArray(decryptionOutput);
         }
 
         #endregion
@@ -892,7 +1027,7 @@ namespace DES_Algorithm {
         #region Wypisanie wyników deszyfrowania
 
         public void DisplayDecryptionResult () {
-            if (decryptionBinaryFormat) {
+            if (decryptionInputFormat == 0) {
                 Console.Clear();
                 Console.WriteLine("   Etap drugi - deszyfrowanie\n\n\n");
                 Console.Write("      Tekst zaszyfrowany: ");
@@ -909,7 +1044,7 @@ namespace DES_Algorithm {
                 Console.WriteLine("\n\n\n");
                 Console.Write("   Wciśnij dowolny klawisz, aby zakończyć działanie programu.");
             }
-            else {
+            else if (decryptionInputFormat == 1) {
                 Console.Clear();
                 Console.WriteLine("   Etap drugi - deszyfrowanie\n\n\n");
                 Console.Write("      Tekst zaszyfrowany (szesnastkowo): ");
@@ -949,6 +1084,245 @@ namespace DES_Algorithm {
                 }
                 Console.WriteLine("\n\n\n");
                 Console.Write("   Wciśnij dowolny klawisz, aby zakończyć działanie programu.");
+            }
+            else if (decryptionInputFormat == 2) {
+                Console.Clear();
+                Console.WriteLine("   Etap drugi - deszyfrowanie\n\n\n");
+                Console.Write("      Tekst zaszyfrowany (szesnastkowo): ");
+                Console.WriteLine(decryptionInputString);
+                Console.WriteLine("\n");
+                Console.Write("      Tekst zaszyfrowany: ");
+                for (int i=0; i<decryptionInput.Length; i++) {
+                    Console.Write(decryptionInput[i]);
+                    if ((i+1) % 8 == 0 && i+1 != decryptionInput.Length)
+                        Console.Write(" ");
+                    if ((i+1) % 64 == 0 && i+1 != decryptionInput.Length)
+                        Console.Write(" ");
+                }
+                Console.WriteLine("\n\n");
+                Console.Write("      Klucz: ");
+                for (int i=0; i<64; i++)
+                    Console.Write(decryptionKey[i]);
+                Console.WriteLine("\n\n");
+                Console.Write("      Tekst odszyfrowany (bitowo): ");
+                for (int i=0; i<decryptionOutput.Length; i++) {
+                    Console.Write(decryptionOutput[i]);
+                    if ((i+1) % 8 == 0 && i+1 != decryptionOutput.Length)
+                        Console.Write(" ");
+                    if ((i+1) % 64 == 0 && i+1 != decryptionOutput.Length)
+                        Console.Write(" ");
+                }
+                Console.WriteLine("\n");
+                Console.Write("      Tekst odszyfrowany: ");
+                Console.WriteLine(decryptionOutputString);
+                Console.WriteLine("\n\n\n");
+                Console.Write("   Wciśnij dowolny klawisz, aby zakończyć działanie programu.");
+            }
+        }
+
+        #endregion
+
+
+
+
+        #region Dane potrzebne do obsługi pliku binarnego
+
+        #region Plik wejściowy
+
+        byte [] binaryFileByteInput;// = File.ReadAllBytes("co.png");
+
+        int [] binaryFileBinaryInput;
+
+        #endregion
+
+        #region Plik wyjściowy
+
+        int [] binaryFileBinaryOutput;
+
+        byte [] binaryFileByteOutput;
+
+        #endregion
+
+            
+
+        #endregion
+
+        #region Wczytanie danych wejściowych
+
+        public void ReadBinaryFileInput () {
+            binaryFileByteInput = File.ReadAllBytes("co.png");
+            binaryFileBinaryInput = new int [binaryFileByteInput.Length*8];
+            for (int i=0; i<binaryFileByteInput.Length; i++) {
+                int ascii = binaryFileByteInput[i];
+                string stringValue = Convert.ToString(ascii,2);
+                for (int j=0; j<8-stringValue.Length; j++)
+                    binaryFileBinaryInput[8*i+j] = 0;
+                for (int j=0; j<stringValue.Length; j++)
+                    binaryFileBinaryInput[8*i+j+(8-stringValue.Length)] = Int32.Parse(stringValue[j].ToString());
+            }
+
+            binaryFileBinaryOutput = new int [binaryFileBinaryInput.Length];
+            binaryFileByteOutput = new byte [binaryFileByteInput.Length];
+
+            encryptionInput = new int [binaryFileBinaryInput.Length];
+
+            for (int i=0; i<encryptionInput.Length; i++)
+                encryptionInput[i] = binaryFileBinaryInput[i];
+
+            encryptionInputBlocksNumber = encryptionInput.Length / 64;
+            encryptionInputBlocks = new int [encryptionInputBlocksNumber,64];
+            encryptionInputPermutedBlocks = new int [encryptionInputBlocksNumber,64];
+            encryptionInputPermutedBlocksSplit = new int [encryptionInputBlocksNumber,2,32];
+            for (int i=0; i<encryptionInputBlocksNumber; i++)
+                for (int j=0; j<64; j++)
+                    encryptionInputBlocks[i,j] = encryptionInput[64*i+j];
+
+            #region Obsługa klucza szyfrowania
+
+            StreamReader streamReader = new StreamReader("binary-file-key.txt");
+            string keyString = streamReader.ReadLine();
+
+            encryptionKey = new int [64];
+
+            encryptionSplitKey = new int [2,32];
+
+            for (int i=0; i<32; i++) {
+                encryptionKey[i] = Int32.Parse(keyString[i].ToString());
+                encryptionKey[i+32] = Int32.Parse(keyString[i+32].ToString());
+                encryptionSplitKey[0,i] = Int32.Parse(keyString[i].ToString());
+                encryptionSplitKey[1,i] = Int32.Parse(keyString[i+32].ToString());
+            }
+            
+            encryptionKeyPlus = new int [56];
+
+            encryptionKeyPlusLeftPart = new int [28];
+            encryptionKeyPlusRightPart = new int [28];
+            
+            permutedChoiceEncryptionSubkeys = new int [16,56];
+            permutedChoiceEncryptionSubkeysBlocks = new int [16,2,28];
+
+            encryptionSubkeys = new int [16,48];
+
+            #endregion
+            
+            almostEncryptionOutputBlocksSplit = new int [encryptionInputBlocksNumber,2,32];
+            almostEncryptionOutputBlocks = new int [encryptionInputBlocksNumber,64];
+            encryptionOutputBlocks = new int [encryptionInputBlocksNumber,64];
+            encryptionOutput = new int [encryptionInput.Length];
+
+        }
+
+        #endregion
+
+        #region Konwersja tablicy bitów do tablicy bajtów
+
+        public void ConvertBinaryFileEncryptionOutput () {
+            int [] intArray = new int [binaryFileByteOutput.Length];
+            for (int i=0; i<encryptionOutput.Length; i++)
+                binaryFileBinaryOutput[i] = encryptionOutput[i];
+            for (int i=0; i<binaryFileByteOutput.Length; i++) {
+                int intValue = 0;
+                for (int j=7; j>=0; j--)
+                    if (binaryFileBinaryOutput[8*i+j] == 1)
+                        intValue += Int32.Parse(Math.Pow(2,7-j).ToString());
+                binaryFileByteOutput[i] = (byte) intValue;
+            }
+            //binaryFileByteOutput = new byte[intArray.Length * sizeof(int)];
+            //Buffer.BlockCopy(intArray, 0, binaryFileByteOutput, 0, binaryFileByteOutput.Length);
+        }
+
+        #endregion
+
+        #region Zapis zaszyfrowanego ciągu bitów (jeśli to możliwe - pod tym samym rozszerzeniem)
+
+        public void SaveOutputBinaryFile () {
+            try {
+                using(Image image = Image.FromStream(new MemoryStream(binaryFileByteOutput))) {
+                    image.Save("output.png", ImageFormat.Png);
+                Console.Clear();
+                Console.WriteLine("\n   Zaszyfrowane bity podanego pliku zostały zapisane jako \"output.png\".\n");
+                Console.WriteLine("   Wciśnij dowolny klawisz, aby przejść do drugiego etapu.");
+                Console.ReadKey();
+                }
+            } catch {
+                File.WriteAllBytes("encrypted-output",binaryFileByteOutput);
+                Console.Clear();
+                Console.WriteLine("\n   Zaszyfrowane bity podanego pliku nie mogą zostać zapisane jako nowy plik tego samego typu.\n");
+                Console.WriteLine("   Zamiast tego utworzony został plik binarny bez rozszerzenia - \"encrypted-output\".");
+                Console.WriteLine("   Wciśnij dowolny klawisz, aby przejść do drugiego etapu.");
+                Console.ReadKey();
+            }
+            decryptionInput = new int [encryptionOutput.Length];
+            for (int i=0; i<decryptionInput.Length; i++)
+                decryptionInput[i] = encryptionOutput[i];
+            decryptionInputBlocksNumber = encryptionInputBlocksNumber;
+            decryptionInputBlocks = new int [decryptionInputBlocksNumber,64];
+            for (int i=0; i<decryptionInputBlocksNumber; i++)
+                for (int j=0; j<64; j++)
+                    decryptionInputBlocks[i,j] = decryptionInput[64*i+j];
+
+            decryptionKey = new int [64];
+            decryptionSplitKey = new int [2,32];
+
+            decryptionSubkeys = new int [16,48];
+            for (int i=0; i<64; i++)
+                decryptionKey[i] = encryptionKey[i];
+            
+            for (int i=0; i<32; i++) {
+                decryptionSplitKey[0,i] = decryptionKey[i];
+                decryptionSplitKey[1,i] = decryptionKey[i+32];
+            }
+            
+            decryptionKeyPlus = new int [56];
+
+            decryptionKeyPlusLeftPart = new int [28];
+            decryptionKeyPlusRightPart = new int [28];
+            
+            permutedChoiceDecryptionSubkeys = new int [16,56];
+            permutedChoiceDecryptionSubkeysBlocks = new int [16,2,28];
+
+            almostDecryptionOutputBlocksSplit = new int [decryptionInputBlocksNumber,2,32];
+            almostDecryptionOutputBlocks = new int [decryptionInputBlocksNumber,64];
+            decryptionOutputBlocks = new int [decryptionInputBlocksNumber,64];
+            decryptionOutput = new int [decryptionInput.Length];
+        }
+
+        #endregion
+
+        #region Konwersja odszyfrowanego ciągu bitów na bajty
+
+        public void ConvertBinaryFileDecryptionOutput () {
+            int [] intArray = new int [binaryFileByteOutput.Length];
+            int [] binaryFileBinaryDecryptionOutput = new int [binaryFileBinaryOutput.Length];
+            for (int i=0; i<decryptionOutput.Length; i++)
+                binaryFileBinaryDecryptionOutput[i] = decryptionOutput[i];
+            for (int i=0; i<binaryFileByteOutput.Length; i++) {
+                int intValue = 0;
+                for (int j=7; j>=0; j--)
+                    if (binaryFileBinaryDecryptionOutput[8*i+j] == 1)
+                        intValue += Int32.Parse(Math.Pow(2,7-j).ToString());
+                binaryFileByteOutput[i] = (byte) intValue;
+            }
+        }
+
+        #endregion
+
+        #region
+
+        public void SaveOutputBinaryDecryptionFile () {
+            try {
+                using(Image image = Image.FromStream(new MemoryStream(binaryFileByteOutput))) {
+                    image.Save("decrypted-output.png", ImageFormat.Png);
+                Console.Clear();
+                Console.WriteLine("\n   Operacja zakończona pomyślnie.\n\n   Odszyfrowane bity zostały zapisane jako \"decrypted-output.png\".\n");
+                Console.WriteLine("   Wciśnij dowolny klawisz, aby zakończyć obsługę pliku binarnego.");
+                Console.ReadKey();
+                }
+            } catch {
+                Console.Clear();
+                Console.WriteLine("\n   Odszyfrowane bity nie mogą zostać zapisane jako nowy plik tego samego typu.\n");
+                Console.WriteLine("   Wciśnij dowolny klawisz, aby zakończyć obsługę pliku binarnego.");
+                Console.ReadKey();
             }
         }
 
