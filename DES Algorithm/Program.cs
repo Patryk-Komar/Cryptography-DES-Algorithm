@@ -21,11 +21,10 @@ namespace DES_Algorithm {
                 Console.WriteLine("   [1] Algorytm DES - szyfrowanie");
                 Console.WriteLine("   [2] Algorytm DES - deszyfrowanie");
                 Console.WriteLine("   [3] Algorytm DES - obsługa bliku binarnego\n");
-                Console.WriteLine("   [P] Pomoc\n\n");
-                Console.WriteLine("   [ESC] Wyjście");
-                ConsoleKey key = Console.ReadKey().Key;
+                Console.Write("   [ESC] Wyjście");
+                ConsoleKeyInfo key = Console.ReadKey();
                 Console.Clear();
-                switch (key) {
+                switch (key.Key) {
                     case ConsoleKey.D1:
                         des.ReadEncryptionInput();
                         des.GenerateEncryptionSubkeys();

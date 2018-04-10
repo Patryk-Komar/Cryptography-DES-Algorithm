@@ -10,7 +10,6 @@ using System.Drawing;
 namespace DES_Algorithm {
 
     public class DES {
-
         
         #region Sprawdzenie formatu ciągu wejściowego
 
@@ -58,7 +57,6 @@ namespace DES_Algorithm {
         }
         
         #endregion
-
 
         #region Konwersja łańcucha znaków do tablicy bitów
 
@@ -1042,7 +1040,7 @@ namespace DES_Algorithm {
                 for (int i=0; i<decryptionOutput.Length; i++)
                     Console.Write(decryptionOutput[i]);
                 Console.WriteLine("\n\n\n");
-                Console.Write("   Wciśnij dowolny klawisz, aby zakończyć działanie programu.");
+                Console.Write("   Wciśnij dowolny klawisz, kontynuować.");
             }
             else if (decryptionInputFormat == 1) {
                 Console.Clear();
@@ -1057,7 +1055,7 @@ namespace DES_Algorithm {
                 Console.Write("      Tekst zaszyfrowany (bitowo): ");
                 for (int i=0; i<decryptionInput.Length; i++) {
                     Console.Write(decryptionInput[i]);
-                    if ((i+1) % 8 == 0 && i+1 != decryptionInput.Length)
+                    if ((i+1) % 4 == 0 && i+1 != decryptionInput.Length)
                         Console.Write(" ");
                     if ((i+1) % 64 == 0 && i+1 != decryptionInput.Length)
                         Console.Write(" ");
@@ -1070,7 +1068,7 @@ namespace DES_Algorithm {
                 Console.Write("      Tekst odszyfrowany (bitowo): ");
                 for (int i=0; i<decryptionOutput.Length; i++) {
                     Console.Write(decryptionOutput[i]);
-                    if ((i+1) % 8 == 0 && i+1 != decryptionOutput.Length)
+                    if ((i+1) % 4 == 0 && i+1 != decryptionOutput.Length)
                         Console.Write(" ");
                     if ((i+1) % 64 == 0 && i+1 != decryptionOutput.Length)
                         Console.Write(" ");
@@ -1083,7 +1081,7 @@ namespace DES_Algorithm {
                         Console.Write(" ");
                 }
                 Console.WriteLine("\n\n\n");
-                Console.Write("   Wciśnij dowolny klawisz, aby zakończyć działanie programu.");
+                Console.Write("   Wciśnij dowolny klawisz, aby kontynuować.");
             }
             else if (decryptionInputFormat == 2) {
                 Console.Clear();
@@ -1116,8 +1114,9 @@ namespace DES_Algorithm {
                 Console.Write("      Tekst odszyfrowany: ");
                 Console.WriteLine(decryptionOutputString);
                 Console.WriteLine("\n\n\n");
-                Console.Write("   Wciśnij dowolny klawisz, aby zakończyć działanie programu.");
+                Console.Write("   Wciśnij dowolny klawisz, aby kontynuować.");
             }
+            Console.ReadKey();
         }
 
         #endregion
@@ -1143,14 +1142,13 @@ namespace DES_Algorithm {
 
         #endregion
 
-            
-
         #endregion
+
 
         #region Wczytanie danych wejściowych
 
         public void ReadBinaryFileInput () {
-            binaryFileByteInput = File.ReadAllBytes("co.png");
+            binaryFileByteInput = File.ReadAllBytes("test.bin");
             binaryFileBinaryInput = new int [binaryFileByteInput.Length*8];
             for (int i=0; i<binaryFileByteInput.Length; i++) {
                 int ascii = binaryFileByteInput[i];
@@ -1307,17 +1305,21 @@ namespace DES_Algorithm {
 
         #endregion
 
-        #region
+        #region Zapis odszyfrowanego ciągu bitów
 
         public void SaveOutputBinaryDecryptionFile () {
             try {
-                using(Image image = Image.FromStream(new MemoryStream(binaryFileByteOutput))) {
-                    image.Save("decrypted-output.png", ImageFormat.Png);
+                //using(Image image = Image.FromStream(new MemoryStream(binaryFileByteOutput))) {
+                //    image.Save("decrypted-output.png", ImageFormat.Png);
+                //Console.Clear();
+                //Console.WriteLine("\n   Operacja zakończona pomyślnie.\n\n   Odszyfrowane bity zostały zapisane jako \"decrypted-output.png\".\n");
+                //Console.WriteLine("   Wciśnij dowolny klawisz, aby zakończyć obsługę pliku binarnego.");
+                //Console.ReadKey();
+                //}
+                File.WriteAllBytes("output.bin",binaryFileByteOutput);
                 Console.Clear();
-                Console.WriteLine("\n   Operacja zakończona pomyślnie.\n\n   Odszyfrowane bity zostały zapisane jako \"decrypted-output.png\".\n");
-                Console.WriteLine("   Wciśnij dowolny klawisz, aby zakończyć obsługę pliku binarnego.");
+                Console.WriteLine("Udało siem.");
                 Console.ReadKey();
-                }
             } catch {
                 Console.Clear();
                 Console.WriteLine("\n   Odszyfrowane bity nie mogą zostać zapisane jako nowy plik tego samego typu.\n");

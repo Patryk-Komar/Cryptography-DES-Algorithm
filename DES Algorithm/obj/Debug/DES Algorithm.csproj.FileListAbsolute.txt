@@ -9,3 +9,4 @@ P:\Programowanie\Visual Studio\DES Algorithm\DES Algorithm\bin\Debug\decryption-
 P:\Programowanie\Visual Studio\DES Algorithm\DES Algorithm\bin\Debug\encryption-input.txt
 P:\Programowanie\Visual Studio\DES Algorithm\DES Algorithm\bin\Debug\co.png
 P:\Programowanie\Visual Studio\DES Algorithm\DES Algorithm\bin\Debug\binary-file-key.txt
+P:\Programowanie\Visual Studio\DES Algorithm\DES Algorithm\bin\Debug\test.bin
