@@ -86,6 +86,7 @@ namespace DES_Algorithm {
                     if (binaryArray[8*i+j]==1)
                         intValue += Int32.Parse(Math.Pow(2,7-j).ToString());
                 }
+
                 char decryptedChar = (char) intValue;
                 outputBuilder.Append(decryptedChar);
             }
@@ -205,6 +206,10 @@ namespace DES_Algorithm {
             // Jeśli format zaszyfrowanego tekstu jest bibnarny
 
             if (encryptionInputFormat == 0) {
+                if (encryptionInputString.Length % 64 != 0) {
+                    int multiple64 = encryptionInputString.Length / 64;
+                    encryptionInputString = encryptionInputString.PadRight((multiple64+1)*64,'0');
+                }
                 encryptionInput = new int [64*(encryptionInputString.Length/64)];
                 char [] input = new char [encryptionInput.Length];
                 for (int i=0; i<encryptionInput.Length; i++)
@@ -225,6 +230,10 @@ namespace DES_Algorithm {
             // Jeśli format zaszyfrowanego tekstu jest heksadecymalny
 
             else if (encryptionInputFormat == 1) {
+                if (encryptionInputString.Length % 16 != 0) {
+                    int multiple16 = encryptionInputString.Length / 16;
+                    encryptionInputString = encryptionInputString.PadRight((multiple16+1)*16,'0');
+                }
                 encryptionInput = new int [4*((encryptionInputString.Length/4)*4)];
                 char [] input = new char [encryptionInput.Length/4];
                 for (int i=0; i<encryptionInput.Length/4; i++)
@@ -280,6 +289,10 @@ namespace DES_Algorithm {
             }
 
             else if (encryptionInputFormat == 2) {
+                if (encryptionInputString.Length % 8 != 0) {
+                    int multiple8 = encryptionInputString.Length / 8;
+                    encryptionInputString = encryptionInputString.PadRight((multiple8+1)*8,(char)00000000);
+                }
                 encryptionInput = new int [8*((encryptionInputString.Length/8)*8)];
                 char [] input = new char [encryptionInput.Length/8];
                 for (int i=0; i<encryptionInput.Length/8; i++)
@@ -292,7 +305,7 @@ namespace DES_Algorithm {
                 encryptionInput = ConvertString(encryptionInputString);
                 for (int i=0; i<encryptionInputBlocksNumber; i++)
                     for (int j=0; j<64; j++)
-                        encryptionInputBlocks[i,j] = encryptionInput[8*i+j];
+                        encryptionInputBlocks[i,j] = encryptionInput[64*i+j];
             }
 
             #endregion
@@ -526,7 +539,7 @@ namespace DES_Algorithm {
         public void DisplayEncryptionResult () {
             if (encryptionInputFormat == 0) {
                 Console.Clear();
-                Console.WriteLine("   Etap pierwszy - szyfrowanie\n\n\n");
+                Console.WriteLine("\n   Algorytm DES - szyfrowanie\n\n");
                 Console.Write("      Tekst jawny: ");
                 for (int i=0; i<encryptionInput.Length; i++)
                     Console.Write(encryptionInput[i]);
@@ -538,12 +551,12 @@ namespace DES_Algorithm {
                 Console.Write("      Tekst zaszyfrowany: ");
                 for (int i=0; i<encryptionOutput.Length; i++)
                     Console.Write(encryptionOutput[i]);
-                Console.WriteLine("\n\n\n");
+                Console.WriteLine("\n\n");
                 Console.Write("   Wciśnij dowolny klawisz, aby kontynuować.");
             }
             else if (encryptionInputFormat == 1) {
                 Console.Clear();
-                Console.WriteLine("   Etap pierwszy - szyfrowanie\n\n\n");
+                Console.WriteLine("\n   Algorytm DES - szyfrowanie\n\n");
                 Console.Write("      Tekst jawny (szesnastkowo): ");
                 for (int i=0; i<encryptionInputString.Length; i++) {
                     Console.Write(encryptionInputString[i]);
@@ -579,12 +592,12 @@ namespace DES_Algorithm {
                     if ((i+1) % 16 == 0 && i+1 != encryptionOutputString.Length)
                         Console.Write(" ");
                 }
-                Console.WriteLine("\n\n\n");
+                Console.WriteLine("\n\n");
                 Console.Write("   Wciśnij dowolny klawisz, aby kontynuować.");
             }
             else if (encryptionInputFormat == 2) {
                 Console.Clear();
-                Console.WriteLine("   Etap pierwszy - szyfrowanie\n\n\n");
+                Console.WriteLine("\n   Algorytm DES - szyfrowanie\n\n");
                 Console.Write("      Tekst jawny: ");
                 Console.Write(encryptionInputString);
                 Console.WriteLine("\n");
@@ -610,7 +623,7 @@ namespace DES_Algorithm {
                         Console.Write(" ");
                 }
                 Console.WriteLine("\n");
-                Console.Write("      Tekst zaszyfrowany:\n\n");
+                Console.Write("      Tekst zaszyfrowany: ");
                 Console.Write(encryptionOutputString);
                 Console.WriteLine("\n\n");
                 Console.Write("   Wciśnij dowolny klawisz, aby kontynuować.");
@@ -686,6 +699,8 @@ namespace DES_Algorithm {
 
             decryptionInputString = streamReader.ReadLine();
 
+            
+
             string decryptionKeyString = streamReader.ReadLine();
 
             #endregion
@@ -699,6 +714,10 @@ namespace DES_Algorithm {
             // Jeśli format zaszyfrowanego tekstu jest bibnarny
 
             if (decryptionInputFormat == 0) {
+                if (decryptionInputString.Length % 64 != 0) {
+                    int multiple64 = decryptionInputString.Length / 64;
+                    decryptionInputString = decryptionInputString.PadRight((multiple64+1)*64,'0');
+                }
                 decryptionInput = new int [64*(decryptionInputString.Length/64)];
                 char [] input = new char [decryptionInput.Length];
                 for (int i=0; i<decryptionInput.Length; i++)
@@ -717,6 +736,10 @@ namespace DES_Algorithm {
             // Jeśli format zaszyfrowanego tekstu jest heksadecymalny
 
             else if (decryptionInputFormat == 1) {
+                if (decryptionInputString.Length % 16 != 0) {
+                    int multiple16 = decryptionInputString.Length / 16;
+                    decryptionInputString = decryptionInputString.PadRight((multiple16+1)*16,'0');
+                }
                 decryptionInput = new int [4*((decryptionInputString.Length/4)*4)];
                 char [] input = new char [decryptionInput.Length/4];
                 for (int i=0; i<decryptionInput.Length/4; i++)
@@ -769,10 +792,13 @@ namespace DES_Algorithm {
                 }
             }
             else if (decryptionInputFormat == 2) {
+                if (decryptionInputString.Length % 8 != 0) {
+                Console.WriteLine(decryptionInputString.Length);
+                Console.ReadKey();
+                    int multiple8 = decryptionInputString.Length / 8;
+                    decryptionInputString = decryptionInputString.PadRight((multiple8+1)*8,(char)0);
+                }
                 decryptionInput = new int [8*((decryptionInputString.Length/8)*8)];
-                Console.Clear();
-                Console.WriteLine(decryptionInput.Length);
-                Console.Read();
                 char [] input = new char [decryptionInput.Length/8];
                 for (int i=0; i<decryptionInput.Length/8; i++)
                     input[i] = decryptionInputString[i];
@@ -782,7 +808,7 @@ namespace DES_Algorithm {
                 decryptionInput = ConvertString(decryptionInputString);
                 for (int i=0; i<decryptionInputBlocksNumber; i++)
                     for (int j=0; j<64; j++)
-                        decryptionInputBlocks[i,j] = decryptionInput[8*i+j];
+                        decryptionInputBlocks[i,j] = decryptionInput[64*i+j];
             }
             #endregion
             
@@ -1027,7 +1053,7 @@ namespace DES_Algorithm {
         public void DisplayDecryptionResult () {
             if (decryptionInputFormat == 0) {
                 Console.Clear();
-                Console.WriteLine("   Etap drugi - deszyfrowanie\n\n\n");
+                Console.WriteLine("\n   Algorytm DES - deszyfrowanie\n\n");
                 Console.Write("      Tekst zaszyfrowany: ");
                 for (int i=0; i<decryptionInput.Length; i++)
                     Console.Write(decryptionInput[i]);
@@ -1044,7 +1070,7 @@ namespace DES_Algorithm {
             }
             else if (decryptionInputFormat == 1) {
                 Console.Clear();
-                Console.WriteLine("   Etap drugi - deszyfrowanie\n\n\n");
+                Console.WriteLine("\n   Algorytm DES - deszyfrowanie\n\n");
                 Console.Write("      Tekst zaszyfrowany (szesnastkowo): ");
                 for (int i=0; i<decryptionInputString.Length; i++) {
                     Console.Write(decryptionInputString[i]);
@@ -1085,11 +1111,11 @@ namespace DES_Algorithm {
             }
             else if (decryptionInputFormat == 2) {
                 Console.Clear();
-                Console.WriteLine("   Etap drugi - deszyfrowanie\n\n\n");
-                Console.Write("      Tekst zaszyfrowany (szesnastkowo): ");
+                Console.WriteLine("\n   Algorytm DES - deszyfrowanie\n\n");
+                Console.Write("      Tekst zaszyfrowany: ");
                 Console.WriteLine(decryptionInputString);
                 Console.WriteLine("\n");
-                Console.Write("      Tekst zaszyfrowany: ");
+                Console.Write("      Tekst zaszyfrowany (bitowo): ");
                 for (int i=0; i<decryptionInput.Length; i++) {
                     Console.Write(decryptionInput[i]);
                     if ((i+1) % 8 == 0 && i+1 != decryptionInput.Length)
@@ -1113,7 +1139,7 @@ namespace DES_Algorithm {
                 Console.WriteLine("\n");
                 Console.Write("      Tekst odszyfrowany: ");
                 Console.WriteLine(decryptionOutputString);
-                Console.WriteLine("\n\n\n");
+                Console.WriteLine("\n");
                 Console.Write("   Wciśnij dowolny klawisz, aby kontynuować.");
             }
             Console.ReadKey();
@@ -1243,11 +1269,10 @@ namespace DES_Algorithm {
                 Console.ReadKey();
                 }
             } catch {
-                File.WriteAllBytes("encrypted-output",binaryFileByteOutput);
+                File.WriteAllBytes("encrypted-output.bin",binaryFileByteOutput);
                 Console.Clear();
-                Console.WriteLine("\n   Zaszyfrowane bity podanego pliku nie mogą zostać zapisane jako nowy plik tego samego typu.\n");
-                Console.WriteLine("   Zamiast tego utworzony został plik binarny bez rozszerzenia - \"encrypted-output\".");
-                Console.WriteLine("   Wciśnij dowolny klawisz, aby przejść do drugiego etapu.");
+                Console.WriteLine("\n   Zaszyfrowane bity zostały zapisane jako nowy plik binarny - \"encrypted-output\".bin.");
+                Console.Write("\n   Wciśnij dowolny klawisz, aby przejść do odszyfrowywania.");
                 Console.ReadKey();
             }
             decryptionInput = new int [encryptionOutput.Length];
@@ -1309,16 +1334,9 @@ namespace DES_Algorithm {
 
         public void SaveOutputBinaryDecryptionFile () {
             try {
-                //using(Image image = Image.FromStream(new MemoryStream(binaryFileByteOutput))) {
-                //    image.Save("decrypted-output.png", ImageFormat.Png);
-                //Console.Clear();
-                //Console.WriteLine("\n   Operacja zakończona pomyślnie.\n\n   Odszyfrowane bity zostały zapisane jako \"decrypted-output.png\".\n");
-                //Console.WriteLine("   Wciśnij dowolny klawisz, aby zakończyć obsługę pliku binarnego.");
-                //Console.ReadKey();
-                //}
                 File.WriteAllBytes("output.bin",binaryFileByteOutput);
                 Console.Clear();
-                Console.WriteLine("Udało siem.");
+                Console.Write("\n   Zakończono odszyfrowywanie pliku binarnego, zapisano jako \"output.bin\".");
                 Console.ReadKey();
             } catch {
                 Console.Clear();
